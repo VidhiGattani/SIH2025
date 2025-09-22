@@ -9,7 +9,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Progress } from '@/components/ui/progress';
 import { Upload, FileText, Zap, Droplets, Factory, Recycle, Play } from 'lucide-react';
 import { toast } from 'sonner';
-import {UploadForm} from '@/components/UploadForm';
 
 const NewAssessment = () => {
   const [selectedProcess, setSelectedProcess] = useState('');
@@ -35,7 +34,7 @@ const NewAssessment = () => {
     const file = e.target.files?.[0];
     if (file) {
       setUploadedFile(file);
-      toast.success(`File "${file.name}" uploaded successfully`);
+      toast.success(File "${file.name}" uploaded successfully);
     }
   };
 
