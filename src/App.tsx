@@ -1,34 +1,17 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { Toaster } from "@/components/ui/sonner";
-import LandingPage from './pages/LandingPage';
-import LoginPage from './pages/LoginPage';
-import Dashboard from './pages/Dashboard';
-import NewAssessment from './pages/NewAssessment';
-import Results from './pages/Results';
-import Reports from './pages/Reports';
-import Team from './pages/Team';
-import Layout from './components/Layout';
-import './App.css';
+// src/App.tsx (or replace the main page where you want upload + results)
+import React, { useState } from 'react';
+import UploadForm, { LcaResult as UploadLcaResult } from '@/components/UploadForm';
+import Results from '@/pages/Results';
 
-function App() {
+export default function App() {
+  const [lcaResult, setLcaResult] = useState<UploadLcaResult | undefined>(undefined);
+
   return (
-    <Router>
-      <div className="min-h-screen bg-gray-50">
-        <Routes>
-          <Route path="/" element={<LandingPage />} />
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/app" element={<Layout />}>
-            <Route index element={<Dashboard />} />
-            <Route path="new-assessment" element={<NewAssessment />} />
-            <Route path="results" element={<Results />} />
-            <Route path="reports" element={<Reports />} />
-            <Route path="team" element={<Team />} />
-          </Route>
-        </Routes>
-        <Toaster />
+    <div className="min-h-screen bg-gray-50 p-6">
+      <div className="max-w-4xl mx-auto space-y-6">
+        <UploadForm onResult={(r) => setLcaResult(r)} />
+        <Results lcaResult={lcaResult} />
       </div>
-    </Router>
+    </div>
   );
 }
-
-export default App;
