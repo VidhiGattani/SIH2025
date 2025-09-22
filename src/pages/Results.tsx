@@ -1,3 +1,5 @@
+// src/pages/Results.tsx
+import React from 'react';
 import { motion } from 'framer-motion';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
@@ -28,8 +30,27 @@ import {
   Legend
 } from 'recharts';
 
-const Results = () => {
-  const keyMetrics = [
+type Breakdown = { upstream: number; processing: number; transport: number };
+
+export type LcaResult = {
+  runId?: string;
+  filename?: string;
+  date?: string;
+  rowsProcessed?: number;
+  totalCO2_kg?: number;
+  totalEnergy_kWh?: number;
+  totalWater_L?: number;
+  recycling_efficiency_pct?: number;
+  confidenceScore_pct?: number;
+  breakdown?: Breakdown;
+  // optional: add timeSeries or comparison if parsed from CSV
+  timeSeries?: { month: string; emissions: number; target?: number }[];
+  comparison?: { category: string; traditional: number; recycling: number }[];
+};
+
+const Results = ({ lcaResult }: { lcaResult?: LcaResult }) => {
+  // Fallback (original static demo) — used only when lcaResult not provided.
+  const fallbackKeyMetrics = [
     {
       title: 'Carbon Footprint',
       value: '1,850 kg CO₂',
@@ -64,16 +85,60 @@ const Results = () => {
     }
   ];
 
-  // Mock data for charts
-  const impactBreakdown = [
-    { name: 'Energy Production', value: 35, color: '#EF4444' },
-    { name: 'Raw Material', value: 25, color: '#F97316' },
-    { name: 'Transportation', value: 20, color: '#EAB308' },
-    { name: 'Processing', value: 15, color: '#22C55E' },
-    { name: 'Waste Treatment', value: 5, color: '#3B82F6' }
-  ];
+  // If we received a real result, convert to displayable keyMetrics
+  const keyMetrics = lcaResult
+    ? [
+        {
+          title: 'Carbon Footprint',
+          value: `${lcaResult.totalCO2_kg ?? 0} kg CO₂`,
+          change: `${lcaResult.confidenceScore_pct ?? 0}% confidence`,
+          icon: TrendingDown,
+          color: 'text-emerald-600',
+          bgColor: 'bg-emerald-100'
+        },
+        {
+          title: 'Energy Consumption',
+          value: `${lcaResult.totalEnergy_kWh ?? 0} kWh`,
+          change: `Rows: ${lcaResult.rowsProcessed ?? 0}`,
+          icon: Zap,
+          color: 'text-yellow-600',
+          bgColor: 'bg-yellow-100'
+        },
+        {
+          title: 'Water Usage',
+          value: `${lcaResult.totalWater_L ?? 0} L`,
+          change: `${lcaResult.recycling_efficiency_pct ?? 0}% recycling`,
+          icon: Droplets,
+          color: 'text-blue-600',
+          bgColor: 'bg-blue-100'
+        },
+        {
+          title: 'Recycling Efficiency',
+          value: `${lcaResult.recycling_efficiency_pct ?? 0}%`,
+          change: `${(lcaResult.totalCO2_kg && lcaResult.totalEnergy_kWh) ? 'Computed' : 'Estimated'}`,
+          icon: Recycle,
+          color: 'text-purple-600',
+          bgColor: 'bg-purple-100'
+        }
+      ]
+    : fallbackKeyMetrics;
 
-  const timeSeriesData = [
+  // Chart data: prefer lcaResult.breakdown / series if present, else use fallback mock arrays
+  const impactBreakdown = lcaResult?.breakdown
+    ? [
+        { name: 'Upstream', value: lcaResult.breakdown.upstream, color: '#EF4444' },
+        { name: 'Processing', value: lcaResult.breakdown.processing, color: '#22C55E' },
+        { name: 'Transport', value: lcaResult.breakdown.transport, color: '#3B82F6' }
+      ]
+    : [
+        { name: 'Energy Production', value: 35, color: '#EF4444' },
+        { name: 'Raw Material', value: 25, color: '#F97316' },
+        { name: 'Transportation', value: 20, color: '#EAB308' },
+        { name: 'Processing', value: 15, color: '#22C55E' },
+        { name: 'Waste Treatment', value: 5, color: '#3B82F6' }
+      ];
+
+  const timeSeriesData = lcaResult?.timeSeries ?? [
     { month: 'Jan', emissions: 2200, target: 2000 },
     { month: 'Feb', emissions: 2100, target: 2000 },
     { month: 'Mar', emissions: 1950, target: 2000 },
@@ -82,12 +147,16 @@ const Results = () => {
     { month: 'Jun', emissions: 1800, target: 2000 }
   ];
 
-  const comparisonData = [
+  const comparisonData = lcaResult?.comparison ?? [
     { category: 'Mining', traditional: 2400, recycling: 1200 },
     { category: 'Processing', traditional: 1800, recycling: 900 },
     { category: 'Transport', traditional: 600, recycling: 300 },
     { category: 'Disposal', traditional: 400, recycling: 100 }
   ];
+
+  const confidence = lcaResult?.confidenceScore_pct ?? 94;
+  const filename = lcaResult?.filename ?? 'Copper Recycling Process - Plant A';
+  const completedDate = lcaResult?.date ?? 'Jan 15, 2024';
 
   return (
     <div className="p-6">
@@ -104,10 +173,10 @@ const Results = () => {
               Assessment Results
             </h1>
             <p className="text-gray-600">
-              Copper Recycling Process - Plant A Analysis
+              {filename}
             </p>
             <Badge variant="outline" className="mt-2">
-              Completed on Jan 15, 2024
+              Completed on {completedDate}
             </Badge>
           </div>
           <div className="flex gap-2">
@@ -173,12 +242,14 @@ const Results = () => {
             </CardHeader>
             <CardContent>
               <div className="flex items-center justify-between mb-4">
-                <span className="text-2xl font-bold text-emerald-600">94%</span>
-                <Badge className="bg-emerald-100 text-emerald-800">High Confidence</Badge>
+                <span className="text-2xl font-bold text-emerald-600">{confidence}%</span>
+                <Badge className="bg-emerald-100 text-emerald-800">
+                  {confidence >= 90 ? 'High Confidence' : confidence >= 60 ? 'Medium' : 'Low'}
+                </Badge>
               </div>
-              <Progress value={94} className="h-3 mb-2" />
+              <Progress value={Math.max(0, Math.min(100, confidence))} className="h-3 mb-2" />
               <p className="text-sm text-gray-600">
-                Assessment based on comprehensive data analysis with industry-standard models
+                Assessment based on uploaded dataset (client-side prototype)
               </p>
             </CardContent>
           </Card>
@@ -205,7 +276,7 @@ const Results = () => {
                       cy="50%"
                       outerRadius={100}
                       dataKey="value"
-                      label={({name, value}) => `${name}: ${value}%`}
+                      label={({name, value}) => `${name}: ${value}`}
                     >
                       {impactBreakdown.map((entry, index) => (
                         <Cell key={`cell-${index}`} fill={entry.color} />
@@ -226,7 +297,7 @@ const Results = () => {
           >
             <Card>
               <CardHeader>
-                <CardTitle>Emissions Trend (6 Months)</CardTitle>
+                <CardTitle>Emissions Trend</CardTitle>
               </CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={300}>
