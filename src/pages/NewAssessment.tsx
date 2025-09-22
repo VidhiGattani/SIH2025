@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Progress } from '@/components/ui/progress';
 import { Upload, FileText, Zap, Droplets, Factory, Recycle, Play } from 'lucide-react';
 import { toast } from 'sonner';
+import {UploadForm} from '@/components/UploadForm';
 
 const NewAssessment = () => {
   const [selectedProcess, setSelectedProcess] = useState('');
